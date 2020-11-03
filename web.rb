@@ -18,13 +18,20 @@ res = res_header + res_body
 loop do
   $stderr.puts "Accepting incoming connections"
   server = TCPServer.new('0.0.0.0', port)
-  socket = server.accept
-  req = ""
-  while (l = socket.gets) && (l != "\r\n")
-    req += l
-  end
-  socket.write(res)
+  begin
+    socket = server.accept
+    req = ""
+    while (l = socket.gets) && (l != "\r\n")
+      req += l
+    end
+    got_request = req.match(/\A\w+ \S+ HTTP\/\S+\r\n/)
+    if got_request
+      socket.write(res)
+    else
+      $stderr.puts "Received non HTTP request: #{req.inspect}"
+    end
+  end while !got_request
   server.close
-  $stderr.puts "Refusing incoming connections for #{wait} seconds"
+  $stderr.puts "Received a HTTP request. Refusing incoming connections for #{wait} seconds"
   sleep wait
 end
